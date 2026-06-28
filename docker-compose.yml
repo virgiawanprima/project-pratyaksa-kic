@@ -93,29 +93,6 @@ services:
           memory: 4G
     restart: unless-stopped
 
-  # ── Telegram Bot ─────────────────────────────────────────────────────────────
-  bot:
-    build:
-      context: .
-      dockerfile: docker-container/bot/Dockerfile
-    container_name: pratyaksa-bot
-    environment:
-      REDIS_URL: redis://redis:6379
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
-    volumes:
-      - ./bot:/app/bot
-    networks:
-      - pratyaksa-net
-    depends_on:
-      redis: { condition: service_healthy }
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-    restart: unless-stopped
-
   # ── MLflow ───────────────────────────────────────────────────────────────────
   mlflow:
     image: ghcr.io/mlflow/mlflow:v3.13.0
