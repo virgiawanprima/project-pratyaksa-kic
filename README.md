@@ -187,7 +187,7 @@ Telegram Bot | CMMS (2 arah)
 | **Backend Analytics** | Python FastAPI (ASGI) — XGBoost + LSTM inference, SHAP computation, *prescriptive engine* |
 | **Edge Inference** | ONNX Runtime — XGBoost ONNX di ARM Cortex-A53, latensi <500ms |
 | **Data Ingestion** | Python (paho-mqtt, redis-py) — MQTT→Redis bridge + Stream Simulator |
-| **Message Queue** | Redis 8.0 — Redis Streams dengan *consumer group* per tipe alat |
+| **Message Queue** | Redis 7 — Redis Streams dengan *consumer group* per tipe alat |
 | **ML/DL** | XGBoost 3.2, Keras 3.14 + TensorFlow 2.21, scikit-learn 1.8 |
 | **Explainability** | SHAP 0.51 — TreeExplainer, *waterfall plot* |
 | **Database** | PostgreSQL 16 + TimescaleDB — *hypertable* sensor_readings & predictions, kompresi >90% |
@@ -268,13 +268,11 @@ docker compose down
 
 ---
 
----
-
 ## 📡 Daftar Service
 
 | Service | Port | Deskripsi |
 |---------|:----:|-----------|
-| **pratyaksa-redis** | 6379* | Redis 8 — Streams, pub/sub, cache result (TTL 1h) |
+| **pratyaksa-redis** | 6379* | Redis 7 — Streams, pub/sub, cache result (TTL 1h) |
 | **pratyaksa-postgres** | 5432* | TimescaleDB 16 — *Hypertable* sensor + prediction (*compress* 30d, *retain* 2y) |
 | **pratyaksa-api** | 6000 | FastAPI — *Inference engine* (predict, explain, workorder, fleet, health) |
 | **pratyaksa-mlflow** | 6050 | MLflow 3.13 — *Experiment tracking* (Postgres backend) |
@@ -329,8 +327,9 @@ python test_load.py
 ```
 pratyaksa/
 ├── docker-compose.yml               # Orkestrasi 11 service
+├── .dockerignore                    # File ignore untuk Docker build
 ├── .env.example                     # Template environment variables
-├── schema_config.json               # Definisi 37 fitur sensor (4 grup)
+├── schema_config.json               # Definisi 32 fitur sensor (4 grup)
 ├── bridge.py                        # MQTT → Redis Stream bridge
 ├── export_onnx.py                   # Export XGBoost → ONNX
 ├── test_core.py                     # Unit test suite
@@ -340,7 +339,7 @@ pratyaksa/
 │   ├── artifact_deploy_meta.json    # Metadata deployment
 │   ├── artifact_xgb_model.json      # XGBoost classifier
 │   ├── artifact_xgb_model.onnx      # ONNX export (340 KB)
-│   ├── artifact_scaler.pkl          # StandardScaler (37 fitur)
+│   ├── artifact_scaler.pkl          # StandardScaler (37 fitur — 32 sensor + 5 dropout flag)
 │   ├── split_{train,test,val}.parquet
 │   ├── artifact_lstm_{type}.keras   # 4 LSTM experts per tipe alat
 │   └── *.npy                        # Training arrays
@@ -364,7 +363,8 @@ pratyaksa/
 ├── bot/                             # 🤖 Telegram Bot (backup)
 │   ├── bot.py                       # Telegram Bot (full, currently disabled)
 │   ├── bot_simulator.py             # FastAPI alert sender
-│   └── docker-container/bot/Dockerfile
+│   ├── requirements.txt             # Dependencies bot
+│   └── tes_bot.py                   # Test script bot
 ├── mosquitto/                       # 📡 MQTT Broker config
 │   ├── config/
 │   ├── data/
