@@ -42,12 +42,12 @@ Sistem AIoT Predictive dan Prescriptive Maintenance untuk Armada Alat Berat Tamb
 
 ## 👥 Identitas Tim
 
-| Jabatan | Nama | NIM | Program Studi | Peran |
-|---------|------|:---:|---------------|-------|
-| **Ketua** | Baits Rika Saputra | 236651071 | D4 Teknik Informatika Multimedia | *Full Stack Developer* (Website) |
-| **Anggota 1** | Virgiawan Prima Rizky | 236652017 | D4 Teknik Informatika Multimedia | *Data & Machine Learning Engineer* |
-| **Anggota 2** | Raihan Akbar Ramadhan | 236651032 | D4 Teknik Informatika Multimedia | *UI/UX Designer* |
-| **Anggota 3** | Farhan Raditya Al Gazali | 246661036 | D4 Teknik Rekayasa Komputer | *IoT Engineer* |
+| Jabatan | Nama | NIM | Program Studi | Peran | LinkedIn |
+|---------|------|:---:|---------------|-------|----------|
+| **Ketua** | Baits Rika Saputra | 236651071 | D4 Teknik Informatika Multimedia | *Full Stack Developer* (Website) | [LinkedIn](https://www.linkedin.com/in/baits-rika-saputra-807197266/) |
+| **Anggota 1** | Virgiawan Prima Rizky | 236652017 | D4 Teknik Informatika Multimedia | *Data & Machine Learning Engineer* | [LinkedIn](https://www.linkedin.com/in/virgiawan-prima-rizky/) |
+| **Anggota 2** | Raihan Akbar Ramadhan | 236651032 | D4 Teknik Informatika Multimedia | *UI/UX Designer* | [LinkedIn](https://www.linkedin.com/in/raihan-akbar-ramadhan-59ba56397/) |
+| **Anggota 3** | Farhan Raditya Al Gazali | 246661036 | D4 Teknik Rekayasa Komputer | *IoT Engineer* | [LinkedIn](https://www.linkedin.com/in/farhan-raditya/) |
 
 **Email Tim:** brsaputra14@gmail.com
 
