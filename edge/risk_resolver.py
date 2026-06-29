@@ -13,24 +13,20 @@ class RiskResolver:
         self.input_name = self.session.get_inputs()[0].name
         self.output_name = self.session.get_outputs()[0].name
 
-    def resolve(self, features_scaled: np.ndarray):
-        # Jalankan inferensi
+    def resolve(self, raw_features: list, features_scaled: np.ndarray):
         raw_output = self.session.run([self.output_name], {self.input_name: features_scaled})[0]
 
-        # Ambil probabilitas risiko (tergantung bentuk output ONNX)
         if raw_output.ndim == 1:
-            # Keluaran 1D: langsung probabilitas (mis. kelas "1" atau "CRITICAL")
             risk_score = float(raw_output[0]) if len(raw_output) > 0 else 0.0
         elif raw_output.ndim == 2:
-            # Keluaran 2D: (1, n_classes)
             if raw_output.shape[1] > 2:
-                # Multi‑class: ambil probabilitas kelas tertinggi (kelas 2 = CRITICAL)
                 risk_score = float(raw_output[0][2])
             else:
-                # Binary: probabilitas kelas positif (indeks 1)
                 risk_score = float(raw_output[0][1])
         else:
             raise ValueError(f"Bentuk output ONNX tidak dikenali: {raw_output.shape}")
 
         twin_state = self.twin.update(risk_score)
+        physics_estimates = self.twin.cross_check(raw_features)
+        twin_state["physics"] = physics_estimates
         return risk_score, twin_state

@@ -360,11 +360,6 @@ pratyaksa/
 │       ├── adxl345.py               # Accelerometer
 │       ├── max6675.py               # Thermocouple
 │       └── pressure_transducer.py   # Pressure transducer
-├── bot/                             # 🤖 Telegram Bot (backup)
-│   ├── bot.py                       # Telegram Bot (full, currently disabled)
-│   ├── bot_simulator.py             # FastAPI alert sender
-│   ├── requirements.txt             # Dependencies bot
-│   └── tes_bot.py                   # Test script bot
 ├── mosquitto/                       # 📡 MQTT Broker config
 │   ├── config/
 │   ├── data/
@@ -388,8 +383,7 @@ pratyaksa/
 │   ├── bridge/Dockerfile
 │   ├── airflow/Dockerfile
 │   ├── simulator/Dockerfile
-│   ├── jupyter/Dockerfile
-│   └── bot/Dockerfile
+│   └── jupyter/Dockerfile
 └── data/
     ├── dataset_pratyaksa_pilot.parquet
     ├── dataset_pratyaksa_noisy.parquet

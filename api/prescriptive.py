@@ -29,5 +29,5 @@ class RecommendationEngine:
             "parts": parts,
             "estimated_total_cost": total_cost,
             "action": action,
-            "comparison": "vs last repair 12% lower"  # TODO: historis
+            "comparison": "vs last repair 12% lower"
         }

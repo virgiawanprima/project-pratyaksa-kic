@@ -347,16 +347,15 @@ async def _write_sensor_reading_to_db(reading: dict, features: list) -> None:
     if _db_engine is None:
         return
     async with _db_write_semaphore:
-        raw_feat_names = FITUR_KOLOM[:32]
+        raw_feat_names = FITUR_KOLOM[:N_FEATURES]
         cols = ['time', 'asset_id'] + raw_feat_names
-        vals = ['to_timestamp(:ts)', ':asset_id'] + [f':f{i}' for i in range(32)]
+        vals = ['to_timestamp(:ts)', ':asset_id'] + [f':f{i}' for i in range(N_FEATURES)]
         sql = text(f"""
             INSERT INTO sensor_readings ({', '.join(cols)})
             VALUES ({', '.join(vals)})
             ON CONFLICT DO NOTHING
         """)
 
-        # Tangani timestamp yang mungkin berupa string ISO atau float epoch
         ts_val = reading.get('timestamp', time.time())
         if isinstance(ts_val, str):
             from datetime import datetime
@@ -371,7 +370,7 @@ async def _write_sensor_reading_to_db(reading: dict, features: list) -> None:
             'ts': ts_val,
             'asset_id': reading['asset_id']
         }
-        for i in range(32):
+        for i in range(N_FEATURES):
             params[f'f{i}'] = features[i]
         async with _db_engine.begin() as conn:
             await conn.execute(sql, params)
@@ -460,33 +459,6 @@ def get_or_init_buffer(asset_id: str, features: list) -> np.ndarray:
     return np.array(buf, dtype=np.float32)
 
 
-# ---------- Dropout flag computation ----------
-FLATLINE_WIN = 10
-FLATLINE_THR = 1e-6
-
-def compute_dropout_flags(asset_id: str) -> dict:
-    buf = get_buffer(asset_id)
-    flags = {}
-    if len(buf) < FLATLINE_WIN:
-        return flags
-    recent = np.array(list(buf)[-FLATLINE_WIN:])
-    for flag_name, feat_name in [
-        ('oil_particle_count_iso_dropout_flag', 'oil_particle_count_iso'),
-        ('payload_tonnage_dropout_flag', 'payload_tonnage'),
-        ('cycle_time_minutes_dropout_flag', 'cycle_time_minutes'),
-        ('haul_distance_km_dropout_flag', 'haul_distance_km'),
-        ('oil_change_flag_dropout_flag', 'oil_change_flag'),
-    ]:
-        flag_idx = _FEAT_IDX.get(flag_name)
-        feat_idx = _FEAT_IDX.get(feat_name)
-        if flag_idx is not None and feat_idx is not None:
-            if recent[:, feat_idx].std() < FLATLINE_THR:
-                flags[flag_idx] = 1.0
-            else:
-                flags[flag_idx] = 0.0
-    return flags
-
-
 # ---------- Single‑forward pass for LSTM ----------
 def _predict_expert_single_pass(expert: PRATYAKSAExpert, X_seq: np.ndarray, n_iter: int = 20):
     X_tiled = np.tile(X_seq, (n_iter, 1, 1))
@@ -518,9 +490,6 @@ async def process_sensor_reading(reading: dict, xgb_class_override: Optional[int
         raise ValueError("Unknown equipment type")
 
     t_start = time.perf_counter()
-    flag_updates = compute_dropout_flags(asset_id)
-    for idx, val in flag_updates.items():
-        features[idx] = val
 
     raw_arr = np.array(features, dtype=np.float32).reshape(1, -1)
     scaled_arr = _scaler.transform(raw_arr)
@@ -529,7 +498,11 @@ async def process_sensor_reading(reading: dict, xgb_class_override: Optional[int
         xgb_class = xgb_class_override
     else:
         xgb_proba = _xgb_model.predict_proba(scaled_arr)
-        xgb_class = int(np.where(xgb_proba[0, 2] >= XGB_THRESHOLD, 2, np.argmax(xgb_proba[0, :2])))
+        num_classes = xgb_proba.shape[1]
+        if num_classes >= 3:
+            xgb_class = int(np.where(xgb_proba[0, 2] >= XGB_THRESHOLD, 2, np.argmax(xgb_proba[0, :2])))
+        else:
+            xgb_class = int(np.argmax(xgb_proba[0]))
 
     seq_raw = get_or_init_buffer(asset_id, features)
     seq_scaled = _scaler.transform(seq_raw)
@@ -631,15 +604,18 @@ async def consume_sensor_streams() -> None:
             xgb_classes = _batch_xgboost_predict(raw_feats_batch)
 
             for idx, reading in enumerate(readings):
-                result = await process_sensor_reading(reading, xgb_class_override=xgb_classes[idx])
+                try:
+                    result = await process_sensor_reading(reading, xgb_class_override=xgb_classes[idx])
 
-                await _redis.setex(f"result:{reading['asset_id']}", 3600, json.dumps(result))
-                await _redis.publish("predictions", json.dumps(result))
-                await _redis.sadd("active_assets", reading["asset_id"])
+                    await _redis.setex(f"result:{reading['asset_id']}", 3600, json.dumps(result))
+                    await _redis.publish("predictions", json.dumps(result))
+                    await _redis.sadd("active_assets", reading["asset_id"])
 
-                if _db_engine is not None:
-                    asyncio.create_task(_write_sensor_reading_to_db(reading, reading["features"]))
-                    _db_batcher.push(result)
+                    if _db_engine is not None:
+                        asyncio.create_task(_write_sensor_reading_to_db(reading, reading["features"]))
+                        _db_batcher.push(result)
+                except Exception as e:
+                    logger.error(f"Failed processing {reading.get('asset_id')}: {e}")
 
             for stream_key, msg_id in msg_acks:
                 await _redis.xack(stream_key, group_name, msg_id)
@@ -763,7 +739,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -945,7 +921,8 @@ async def fleet_status():
             except Exception:
                 continue
 
-    fleet.sort(key=lambda x: x["risk_level"] == "CRITICAL", reverse=True)
+    risk_order = {"CRITICAL": 0, "WARNING": 1, "NORMAL": 2}
+    fleet.sort(key=lambda x: risk_order.get(x["risk_level"], 3))
     return {"fleet": fleet, "total": len(fleet)}
 
 

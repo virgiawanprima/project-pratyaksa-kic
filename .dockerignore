@@ -7,7 +7,6 @@ __pycache__
 mlflow.db
 *.db
 edge/
-bridge/
 mosquitto/
 data/
 notebooks/
