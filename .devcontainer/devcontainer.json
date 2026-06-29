@@ -1,18 +1,13 @@
 {
-	"name": "PRATYAKSA Dev",
-	"dockerComposeFile": [
-		"../docker-compose.yml",
-		"../docker-compose.dev.yml"
-	],
-	"service": "dev",
+	"name": "Python 3 Dev Container",
+	"image": "mcr.microsoft.com/devcontainers/python:3-3.11-bookworm",
 	"workspaceFolder": "/workspace",
+	"postCreateCommand": "pip3 install -r requirements-dev.txt",
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"ms-python.python",
-				"ms-python.vscode-pylance",
-				"ms-python.black-formatter",
-				"ms-toolsai.jupyter"
+				"ms-python.vscode-pylance"
 			]
 		}
 	}
